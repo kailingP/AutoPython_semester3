@@ -1,9 +1,13 @@
 import csv
+import json
+import os
 from collections import Counter
 import random
+from pathlib import Path
+
 import requests
 import argparse
-
+from random import choice
 
 allNames = []
 allAges = []
@@ -53,19 +57,53 @@ def get_stats():
             female, topNames))
 
 
-def generate_dog():
-    dog_name = allNames[random.randint(0, len(allNames))]
-    dog_birth = allAges[random.randint(0, len(allAges))]
-    dog_gender = genders[random.randint(0, 2)]
+def generate_dog(target_directory):
+    dog_name = choice(allNames)
+    dog_birth = choice(allAges)
+    dog_gender = choice(['m', 'w'])
+    dog_image = ''
+
+    # -o /--output-dir argument which allows specifying a directory where the file should be put
+
+    is_image = False
+    while not is_image:
+        response = requests.get('https://random.dog/woof.json')
+        media = response.json()['url']
+
+        if response.status_code != 200:
+            print(response)
+
+        if media.endswith('.jpg'):
+            is_image = True
+            print("It is an image")
+            image_name = '{}_{}.jpg'.format(dog_name, dog_birth)
+            current_directory = os.getcwd()
+            print('current_directory:',  current_directory)
+            target_directory = Path(current_directory, target_directory)
+            if not target_directory.exists():
+                target_directory.mkdir()
+
+            os.chdir(target_directory)
+            dog_image = Path(os.getcwd(), image_name)
+            print(dog_image)
+
+            with open(dog_image, 'wb') as handle:
+                response = requests.get(media, stream=True)
+
+                for block in response.iter_content(1024):
+                    if not block:
+                        break
+                    handle.write(block)
+
+
     print("A new dog is generated\nname : {}\nbirth year : {}\ngender : {}".format(dog_name, dog_birth, dog_gender))
-    with Image.open('path/to/file.jpg') as img:
-        img.show()
+    print('the image of dog is saved here: ' , dog_image)
 
 
 def main(args=None):
     find(dogName=get_parser().name)
     get_stats()
-    generate_dog()
+    generate_dog('../Download')
 
 
 if __name__ == "__main__":
