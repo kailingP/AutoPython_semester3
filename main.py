@@ -13,9 +13,21 @@ allNames = []
 allAges = []
 genders = ['m', 'w']
 
+available_data = {
+    2021: 20210103,
+    2020: 20210306,
+    2019: 20190304,
+    2018: 20180305,
+    2017: 20170308,
+    2016: 20160307,
+    2015: 20151001,
+}
 
-def find(dogName):
-    path = requests.get('https://data.stadt-zuerich.ch/dataset/sid_stapo_hundenamen/download/20170308_hundenamen.csv')
+
+def find(dogName, dataYear):
+    path = requests.get(
+        f'https://data.stadt-zuerich.ch/dataset/sid_stapo_hundenamen/download/{available_data[dataYear]}_hundenamen.csv')
+    print(path)
     content = path.content.decode("utf-8-sig").splitlines()
     reader = csv.DictReader(content)
     for line in reader:
@@ -29,11 +41,16 @@ def get_parser():
     myparse.add_argument('-s', '--statistics', help="to read the statistics")  # with hyphens are optional
     myparse.add_argument('-active', help='is active by default',
                          action='store_true')  # optional boolean parameter with default value of true
+    myparse.add_argument('-y', '--year', help='specify the data year, default data from 2021', default=2021)
+    myparse.add_argument('-o', '--output',
+                         help='specify a file path to save the dog image, default is current working directory',
+                         type=str, default='.')
     return myparse.parse_args()
 
 
-def get_stats():
-    path = requests.get('https://data.stadt-zuerich.ch/dataset/sid_stapo_hundenamen/download/20170308_hundenamen.csv')
+def get_stats(dataYear):
+    path = requests.get(
+        f'https://data.stadt-zuerich.ch/dataset/sid_stapo_hundenamen/download/{available_data[dataYear]}_hundenamen.csv')
     content = path.content.decode("utf-8-sig").splitlines()
     reader = csv.DictReader(content)
     allGender = []
@@ -78,7 +95,7 @@ def generate_dog(target_directory):
             print("It is an image")
             image_name = '{}_{}.jpg'.format(dog_name, dog_birth)
             current_directory = os.getcwd()
-            print('current_directory:',  current_directory)
+            print('current_directory:', current_directory)
             target_directory = Path(current_directory, target_directory)
             if not target_directory.exists():
                 target_directory.mkdir()
@@ -95,15 +112,15 @@ def generate_dog(target_directory):
                         break
                     handle.write(block)
 
-
     print("A new dog is generated\nname : {}\nbirth year : {}\ngender : {}".format(dog_name, dog_birth, dog_gender))
-    print('the image of dog is saved here: ' , dog_image)
+    print('the image of dog is saved here: ', dog_image)
 
 
 def main(args=None):
-    find(dogName=get_parser().name)
-    get_stats()
-    generate_dog('../Download')
+    parser = get_parser()
+    find(dogName=parser.name, dataYear=parser.year)
+    get_stats(dataYear=parser.year)
+    generate_dog(target_directory= parser.output)
 
 
 if __name__ == "__main__":
