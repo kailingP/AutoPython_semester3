@@ -1,5 +1,6 @@
 #
 import argparse
+import csv
 
 import requests
 
@@ -18,25 +19,13 @@ def year_link_dic():
 
 
 def get_yearly_data(link):
-    # TODO: get data dictionary with year which
-    """
-    path = requests.get("data from year XXX")
-    return {all_names, all_years,all_genders}
-    like [
-        {
-            geschlecht_hund: 'f',
-            hundename: 'Bella',
-            geburtsjahr_hund: 2020,
-        }
-        {
-            geschlecht_hund: 'm',
-            hundename: 'Bello',
-            geburtsjahr_hund: 2015,
-        }
-    ]
+    data = requests.get(link).content.decode("utf-8-sig").splitlines()
+    data_reader = csv.DictReader(data)
+    # TODO: CATCH ERROR ->CONNECTION, DATA FORMAT
+    dog_list = list(data_reader)
+    dog_list_upper_keys = [{key.upper():value for (key, value) in dog.items()} for dog in dog_list]
+    return dog_list_upper_keys
 
-    """
-    pass
 
 
 # Search dog by {dog_name} from the latest year and output to console
@@ -84,8 +73,7 @@ def main(args=None):
     latest_year, links = year_link_dic()
     args_parsed = parsers(latest_year)
     link = links[args_parsed.year]
-    print(link)
-    """
+
     all_dog_info_list = get_yearly_data(link)
 
     if args_parsed.sub_cmd == "find":
@@ -94,7 +82,7 @@ def main(args=None):
         stats(all_dog_info_list)
     elif args_parsed.sub_cmd == "create":
         create(args_parsed.output_dir, all_dog_info_list)
-    """
+
 
 
 if __name__ == "__main__":
