@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+import sys
 from collections import Counter
 from pathlib import Path
 from random import choice
@@ -11,11 +12,17 @@ from rich import print
 import rich.table
 
 
+def check_request(request):
+    if not request.ok:
+        print(f'Error: {request.status_code}, due to {request.reason}')
+        sys.exit()
+
+
 def year_link_dic():
     path = requests.get(
         "https://ckan.opendata.swiss/api/3/action/package_show?id=hundenamen-aus-dem-hundebestand-der-stadt-zurich2")
+    check_request(path)
 
-    # TODO: CATCH ERRORS
     year_and_link = {}
     list_of_available_years = path.json()['result']['resources']
     for item in list_of_available_years:
@@ -56,8 +63,7 @@ def create(save_img_dest, all_dog_info):
     is_image = False
     while not is_image:
         response = requests.get('https://random.dog/woof.json')
-        # TODO: ERROR HANDLING
-
+        check_request(response)
         media = response.json()['url']
         media_extension = media[-4:].lower()
         if media_extension in ['.jpg', '.png']:
@@ -74,6 +80,7 @@ def create(save_img_dest, all_dog_info):
 
             with open(dog_image, 'wb') as handle:
                 response = requests.get(media, stream=True)
+                check_request(response)
 
                 for block in response.iter_content(1024):
                     if not block:
@@ -117,16 +124,17 @@ def stats(all_dog_info):
 
 
 def parsers(latest_year):
-    parser = argparse.ArgumentParser(description="Your input options: ")
-    parser.add_argument('-y', '--year', type=int, help='Specify the data year', default=latest_year)
+    parser = argparse.ArgumentParser(description="Info of registered dogs in the city of Zurich.")
+    parser.add_argument('-y', '--year', type=int, help='Specify the data year, default will be the latest year',
+                        default=latest_year)
     sub_parser = parser.add_subparsers(dest="sub_cmd")
 
-    find_dog = sub_parser.add_parser("find")
-    find_dog.add_argument('name', type=str, help='the dog name you want to search')
+    find_dog = sub_parser.add_parser("find", help='Display search result by the dog nmae')
+    find_dog.add_argument('name', type=str, help='The dog name you want to search')
 
-    sub_parser.add_parser("stats")
+    sub_parser.add_parser("stats", help='Display Statistics')
 
-    create_dog = sub_parser.add_parser("create")
+    create_dog = sub_parser.add_parser("create", help='Generate a dog with random data of registered dogs')
     create_dog.add_argument('-o', '--output-dir',
                             help='Specify a location to save the image of a new dog, default is current directory',
                             type=str, default='.')
