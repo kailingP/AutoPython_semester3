@@ -6,6 +6,9 @@ from pathlib import Path
 from random import choice
 
 import requests
+import rich
+from rich import print
+import rich.table
 
 
 def year_link_dic():
@@ -34,13 +37,19 @@ def find(dog_name, all_dog_info):
     dogs_found = [dog for dog in all_dog_info if (dog_name == dog['HUNDENAME'])]
     if not dogs_found:
         print("No match found")
+
+    results_table = rich.table.Table()
+    results_table.add_column("Name", style="red bold")
+    results_table.add_column("Birth Year")
+    results_table.add_column("Sex")
     for dog in dogs_found:
-        print(dog['HUNDENAME'], dog['GEBURTSJAHR_HUND'], dog['GESCHLECHT_HUND'])
+        results_table.add_row(dog['HUNDENAME'], dog['GEBURTSJAHR_HUND'], dog['GESCHLECHT_HUND'])
+    print(results_table)
 
 
 def create(save_img_dest, all_dog_info):
     dog_name = choice([dog['HUNDENAME'] for dog in all_dog_info])
-    dog_birth = choice([dog['GESCHLECHT_HUND'] for dog in all_dog_info])
+    dog_birth = choice([dog['GEBURTSJAHR_HUND'] for dog in all_dog_info])
     dog_gender = choice(['m', 'w'])
     dog_image = ''
 
@@ -53,6 +62,7 @@ def create(save_img_dest, all_dog_info):
         media_extension = media[-4:].lower()
         if media_extension in ['.jpg', '.png']:
             is_image = True
+            dog_name = '_'.join(dog_name.split())
             image_name = f'{dog_name}_{dog_birth}{media_extension}'
             current_directory = os.getcwd()
             save_img_dest = Path(current_directory, save_img_dest)
@@ -70,9 +80,14 @@ def create(save_img_dest, all_dog_info):
                         break
                     handle.write(block)
 
-    print(
-        "Here's your new dog!\nName : {}\nBirth year : {}\nSex : {}\nThe image of the new dog can be found here: {}\n"
-        "".format(dog_name, dog_birth, dog_gender, dog_image))
+    new_dog_table = rich.table.Table(title="Here's your new dog!", show_header=False)
+
+    new_dog_table.add_row("Name", dog_name)
+    new_dog_table.add_row("Birth Year", dog_birth)
+    new_dog_table.add_row("Sex", dog_gender)
+    new_dog_table.add_row("Image", str(dog_image))
+
+    print(new_dog_table)
 
 
 def stats(all_dog_info):
@@ -83,10 +98,22 @@ def stats(all_dog_info):
     shortest_name = min(all_names, key=len)
     top_10_dogs = {k: v for k, v in sorted(Counter(all_names).items(), key=lambda item: item[1], reverse=True)[:10]}
 
-    print(
-        "Longest Name:{}, shortest:{},male:{}, female:{}, popular:{}".format(longest_name, shortest_name,
-                                                                             count_gender['m'], count_gender['w'],
-                                                                             top_10_dogs))
+    top_10_table = rich.table.Table(title="Most common name - TOP 10", width=50)
+    top_10_table.add_column("Name", style="red bold")
+    top_10_table.add_column("Counts")
+
+    for name, counts in top_10_dogs.items():
+        top_10_table.add_row(str(name), str(counts))
+
+    stats_table = rich.table.Table(title="Interesting Statistic", show_header=False)
+
+    stats_table.add_row("Longest Name", str(longest_name))
+    stats_table.add_row("Shortest Name", str(shortest_name))
+    stats_table.add_row("Males", str(count_gender['m']))
+    stats_table.add_row("Females", str(count_gender['w']))
+
+    print(stats_table)
+    print(top_10_table)
 
 
 def parsers(latest_year):
