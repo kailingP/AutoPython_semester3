@@ -1,6 +1,9 @@
 import argparse
 import csv
+import os
 from collections import Counter
+from pathlib import Path
+from random import choice
 
 import requests
 
@@ -36,10 +39,40 @@ def find(dog_name, all_dog_info):
 
 
 def create(save_img_dest, all_dog_info):
-    """
-    all_names, all_years, all_genders = get_yearly_data(year)
-    TODO: create dog_name, birth, gender, img from get_yearly_data
-    """
+    dog_name = choice([dog['HUNDENAME'] for dog in all_dog_info])
+    dog_birth = choice([dog['GESCHLECHT_HUND'] for dog in all_dog_info])
+    dog_gender = choice(['m', 'w'])
+    dog_image = ''
+
+    is_image = False
+    while not is_image:
+        response = requests.get('https://random.dog/woof.json')
+        # TODO: ERROR HANDLING
+
+        media = response.json()['url']
+        media_extension = media[-4:].lower()
+        if media_extension in ['.jpg', '.png']:
+            is_image = True
+            image_name = f'{dog_name}_{dog_birth}{media_extension}'
+            current_directory = os.getcwd()
+            save_img_dest = Path(current_directory, save_img_dest)
+            if not save_img_dest.exists():
+                save_img_dest.mkdir()
+
+            os.chdir(save_img_dest)
+            dog_image = Path(os.getcwd(), image_name)
+
+            with open(dog_image, 'wb') as handle:
+                response = requests.get(media, stream=True)
+
+                for block in response.iter_content(1024):
+                    if not block:
+                        break
+                    handle.write(block)
+
+    print(
+        "Here's your new dog!\nName : {}\nBirth year : {}\nSex : {}\nThe image of the new dog can be found here: {}\n"
+        "".format(dog_name, dog_birth, dog_gender, dog_image))
 
 
 def stats(all_dog_info):
@@ -52,8 +85,8 @@ def stats(all_dog_info):
 
     print(
         "Longest Name:{}, shortest:{},male:{}, female:{}, popular:{}".format(longest_name, shortest_name,
-                                                                       count_gender['m'], count_gender['w'],
-                                                                       top_10_dogs))
+                                                                             count_gender['m'], count_gender['w'],
+                                                                             top_10_dogs))
 
 
 def parsers(latest_year):
