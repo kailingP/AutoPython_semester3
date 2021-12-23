@@ -1,5 +1,6 @@
 import argparse
 import csv
+from collections import Counter
 
 import requests
 
@@ -42,15 +43,22 @@ def create(save_img_dest, all_dog_info):
 
 
 def stats(all_dog_info):
-    """
-    print(longest_name, shortest_name, total_male, total_female, top_10_names)
-    """
+    all_names = [dog['HUNDENAME'] for dog in all_dog_info]
+    all_genders = [dog['GESCHLECHT_HUND'] for dog in all_dog_info]
+    count_gender = Counter(all_genders)
+    longest_name = max(all_names, key=len)
+    shortest_name = min(all_names, key=len)
+    top_10_dogs = {k: v for k, v in sorted(Counter(all_names).items(), key=lambda item: item[1], reverse=True)[:10]}
+
+    print(
+        "Longest Name:{}, shortest:{},male:{}, female:{}, popular:{}".format(longest_name, shortest_name,
+                                                                       count_gender['m'], count_gender['w'],
+                                                                       top_10_dogs))
 
 
 def parsers(latest_year):
     parser = argparse.ArgumentParser(description="Your input options: ")
     parser.add_argument('-y', '--year', type=int, help='Specify the data year', default=latest_year)
-
     sub_parser = parser.add_subparsers(dest="sub_cmd")
 
     find_dog = sub_parser.add_parser("find")
@@ -69,7 +77,6 @@ def main(args=None):
     latest_year, links = year_link_dic()
     args_parsed = parsers(latest_year)
     link = links[args_parsed.year]
-
     all_dog_info_list = get_yearly_data(link)
 
     if args_parsed.sub_cmd == "find":
