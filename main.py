@@ -1,4 +1,3 @@
-#
 import argparse
 import csv
 
@@ -23,19 +22,16 @@ def get_yearly_data(link):
     data_reader = csv.DictReader(data)
     # TODO: CATCH ERROR ->CONNECTION, DATA FORMAT
     dog_list = list(data_reader)
-    dog_list_upper_keys = [{key.upper():value for (key, value) in dog.items()} for dog in dog_list]
+    dog_list_upper_keys = [{key.upper(): value for (key, value) in dog.items()} for dog in dog_list]
     return dog_list_upper_keys
 
 
-
-# Search dog by {dog_name} from the latest year and output to console
 def find(dog_name, all_dog_info):
-    """
-    all_names, all years, all_genders = get_yearly_data(year)
-
-    TODO: Search dog name from data
-    TODO: Print dog's name, birthyear, sex
-     """
+    dogs_found = [dog for dog in all_dog_info if (dog_name == dog['HUNDENAME'])]
+    if not dogs_found:
+        print("No match found")
+    for dog in dogs_found:
+        print(dog['HUNDENAME'], dog['GEBURTSJAHR_HUND'], dog['GESCHLECHT_HUND'])
 
 
 def create(save_img_dest, all_dog_info):
@@ -82,7 +78,6 @@ def main(args=None):
         stats(all_dog_info_list)
     elif args_parsed.sub_cmd == "create":
         create(args_parsed.output_dir, all_dog_info_list)
-
 
 
 if __name__ == "__main__":
