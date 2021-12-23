@@ -4,27 +4,17 @@ import argparse
 import requests
 
 
-def data_dic():
-    """
-        request data from https://ckan.opendata.swiss/api/3/action/package_show?id=hundenamen-aus-dem-hundebestand-der-stadt-zurich2
-        ,loop throungh result/resources[0,5]
-        return a dic like:
-       {
-        year= file:name[0:4] : link
-        2021: https://data.stadt-zuerich.ch/dataset/sid_stapo_hundenamen/download/20151001_hundenamen.csv"
-        2020: https://data.stadt-zuerich.ch/dataset/sid_stapo_hundenamen/download/20151001_hundenamen.csv"
-        2019: https://data.stadt-zuerich.ch/dataset/sid_stapo_hundenamen/download/20151001_hundenamen.csv"
-        }
-        and latest_year = 201
-
-    """
+def year_link_dic():
     path = requests.get(
         "https://ckan.opendata.swiss/api/3/action/package_show?id=hundenamen-aus-dem-hundebestand-der-stadt-zurich2")
 
     # TODO: CATCH ERRORS
-
+    year_and_link = {}
     list_of_available_years = path.json()['result']['resources']
-
+    for item in list_of_available_years:
+        year = int(item['display_name']['de'][:4])
+        year_and_link[year] = item['download_url']
+    return max(year_and_link.keys()), year_and_link
 
 
 def get_yearly_data(link):
@@ -91,9 +81,11 @@ def parsers(latest_year):
 
 
 def main(args=None):
-    year_link_dic, latest_year = data_dic()
+    latest_year, links = year_link_dic()
     args_parsed = parsers(latest_year)
-    link = year_link_dic[args_parsed.year]
+    link = links[args_parsed.year]
+    print(link)
+    """
     all_dog_info_list = get_yearly_data(link)
 
     if args_parsed.sub_cmd == "find":
@@ -102,6 +94,7 @@ def main(args=None):
         stats(all_dog_info_list)
     elif args_parsed.sub_cmd == "create":
         create(args_parsed.output_dir, all_dog_info_list)
+    """
 
 
 if __name__ == "__main__":
